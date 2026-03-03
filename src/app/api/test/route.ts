@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 const CIVIC_API_BASE = "https://www.googleapis.com/civicinfo/v2";
 const TEST_ADDRESS = "1 Edward Circle York ME 03909";
 

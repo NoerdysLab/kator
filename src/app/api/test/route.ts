@@ -3,15 +3,17 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const CIVIC_API_BASE = "https://www.googleapis.com/civicinfo/v2";
-const TEST_ADDRESS = "1 Edward Circle York ME 03909";
+const TEST_ADDRESS = "1 Edward Circle, York, ME 03909";
 
 export async function GET() {
   const apiKey = process.env.GOOGLE_CIVIC_API_KEY;
 
   const envCheck = {
-    GOOGLE_CIVIC_API_KEY: apiKey
-      ? `${apiKey.substring(0, 8)}...`
+    GOOGLE_CIVIC_API_KEY_exists: !!apiKey,
+    GOOGLE_CIVIC_API_KEY_first8: apiKey
+      ? apiKey.substring(0, 8)
       : "NOT SET",
+    GOOGLE_CIVIC_API_KEY_length: apiKey ? apiKey.length : 0,
   };
 
   if (!apiKey) {
@@ -22,28 +24,52 @@ export async function GET() {
     });
   }
 
+  const endpoints = ["voterinfo", "representatives"] as const;
   const results: Record<string, unknown> = {
     envCheck,
     testAddress: TEST_ADDRESS,
+    apiBase: CIVIC_API_BASE,
   };
 
-  // Call both endpoints
-  for (const endpoint of ["voterinfo", "representatives"]) {
-    const url = `${CIVIC_API_BASE}/${endpoint}?address=${encodeURIComponent(TEST_ADDRESS)}&key=${apiKey}`;
+  for (const endpoint of endpoints) {
+    const fullUrl = `${CIVIC_API_BASE}/${endpoint}?address=${encodeURIComponent(TEST_ADDRESS)}&key=${apiKey}`;
+    // Show URL with key redacted for debugging
+    const redactedUrl = fullUrl.replace(apiKey, apiKey.substring(0, 8) + "...");
+
     try {
-      const res = await fetch(url, { cache: "no-store" });
-      const body = await res.json();
+      const res = await fetch(fullUrl, { cache: "no-store" });
+      const responseHeaders: Record<string, string> = {};
+      res.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
+      let body: unknown;
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        body = await res.json();
+      } else {
+        body = await res.text();
+      }
+
       results[endpoint] = {
-        status: res.status,
+        requestUrl: redactedUrl,
+        httpStatus: res.status,
+        httpStatusText: res.statusText,
         ok: res.ok,
-        data: body,
+        responseContentType: contentType,
+        responseHeaders,
+        body,
       };
     } catch (err) {
       results[endpoint] = {
-        error: err instanceof Error ? err.message : "Unknown error",
+        requestUrl: redactedUrl,
+        fetchError: err instanceof Error ? err.message : "Unknown error",
+        errorStack: err instanceof Error ? err.stack : undefined,
       };
     }
   }
 
-  return NextResponse.json(results);
+  return NextResponse.json(results, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }

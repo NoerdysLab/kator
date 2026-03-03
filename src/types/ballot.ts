@@ -35,6 +35,12 @@ export interface Official {
   channels?: { type: string; id: string }[];
 }
 
+export interface Division {
+  ocdId: string;
+  name: string;
+  level: "federal" | "state" | "local";
+}
+
 export interface PollingLocation {
   name: string;
   address: string;
@@ -53,6 +59,7 @@ export interface BallotData {
   races: Race[];
   measures: BallotMeasure[];
   officials: Official[];
+  divisions: Division[];
   address: string;
   isMockData: boolean;
   fallbackReason?: string;
@@ -61,6 +68,8 @@ export interface BallotData {
 export interface BallotApiResponse {
   voterInfo: Record<string, unknown> | null;
   voterInfoError: string | null;
+  divisions: Record<string, unknown> | null;
+  divisionsError: string | null;
   representatives: Record<string, unknown> | null;
   representativesError: string | null;
 }

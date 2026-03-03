@@ -11,6 +11,7 @@ import BallotSection from "@/components/BallotSection";
 import RaceCard from "@/components/RaceCard";
 import MeasureCard from "@/components/MeasureCard";
 import OfficialCard from "@/components/OfficialCard";
+import DivisionCard from "@/components/DivisionCard";
 
 function BallotContent() {
   const searchParams = useSearchParams();
@@ -92,9 +93,14 @@ function BallotContent() {
   const stateOfficials = data.officials.filter((o) => o.level === "state");
   const localOfficials = data.officials.filter((o) => o.level === "local");
 
+  const federalDivisions = data.divisions.filter((d) => d.level === "federal");
+  const stateDivisions = data.divisions.filter((d) => d.level === "state");
+  const localDivisions = data.divisions.filter((d) => d.level === "local");
+
   const hasRaces = data.races.length > 0;
   const hasMeasures = data.measures.length > 0;
   const hasOfficials = data.officials.length > 0;
+  const hasDivisions = data.divisions.length > 0;
   const hasElection = !!data.election;
 
   return (
@@ -258,7 +264,7 @@ function BallotContent() {
             </BallotSection>
           )}
 
-          {/* Officials */}
+          {/* Officials (from mock data or future integration) */}
           {hasOfficials && (
             <>
               {federalOfficials.length > 0 && (
@@ -350,12 +356,77 @@ function BallotContent() {
             </>
           )}
 
+          {/* Divisions / Districts */}
+          {hasDivisions && !hasOfficials && (
+            <BallotSection
+              icon={
+                <svg
+                  className="w-6 h-6 text-civic-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                  />
+                </svg>
+              }
+              title="Your Districts"
+              count={data.divisions.length}
+              defaultOpen={true}
+            >
+              <p className="text-sm text-navy-500 mb-4">
+                These are the political divisions and districts that represent
+                your address. Each district has elected officials who represent
+                you.
+              </p>
+              {federalDivisions.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-semibold text-navy-400 uppercase tracking-wide mb-2">
+                    Federal
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {federalDivisions.map((d) => (
+                      <DivisionCard key={d.ocdId} division={d} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {stateDivisions.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-semibold text-navy-400 uppercase tracking-wide mb-2">
+                    State
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {stateDivisions.map((d) => (
+                      <DivisionCard key={d.ocdId} division={d} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {localDivisions.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-semibold text-navy-400 uppercase tracking-wide mb-2">
+                    Local
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {localDivisions.map((d) => (
+                      <DivisionCard key={d.ocdId} division={d} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </BallotSection>
+          )}
+
           {/* Nothing found */}
-          {!hasRaces && !hasMeasures && !hasOfficials && (
+          {!hasRaces && !hasMeasures && !hasOfficials && !hasDivisions && (
             <div className="text-center py-12">
               <p className="text-navy-500">
-                No ballot or representative data found for this address. Try a
-                different address.
+                No civic data found for this address. Try a different address.
               </p>
             </div>
           )}

@@ -2,22 +2,22 @@ import {
   BallotData,
   Race,
   BallotMeasure,
-  Official,
+  Division,
   ElectionInfo,
   BallotApiResponse,
 } from "@/types/ballot";
 import { mockBallotData } from "./mock-data";
 
-function categorizeOffice(
-  levels: string[] | undefined
+function categorizeDivision(
+  ocdId: string
 ): "federal" | "state" | "local" {
-  if (!levels || levels.length === 0) return "local";
-  if (levels.includes("country")) return "federal";
-  if (
-    levels.includes("administrativeArea1") ||
-    levels.includes("regional")
-  )
-    return "state";
+  if (ocdId === "ocd-division/country:us") return "federal";
+  // State-level: has /state:xx but nothing after
+  if (/\/state:\w+$/.test(ocdId)) return "state";
+  // Has /state:xx but also more specific divisions after
+  if (/\/state:\w+\//.test(ocdId)) return "local";
+  // Country-level subdivisions without state
+  if (ocdId.startsWith("ocd-division/country:us")) return "federal";
   return "local";
 }
 
@@ -36,17 +36,38 @@ export function mapApiResponse(
   apiResponse: BallotApiResponse,
   address: string
 ): BallotData {
-  const { voterInfo, voterInfoError, representatives, representativesError } =
+  const { voterInfo, voterInfoError, divisions: divisionsData, divisionsError } =
     apiResponse;
 
-  const bothFailed = !voterInfo && !representatives;
+  const bothFailed = !voterInfo && !divisionsData;
 
   if (bothFailed) {
+    // Only fall back to mock data if we got nothing at all
+    // "Election unknown" on voterInfo is expected and means voterInfo is null
+    const voterInfoIsExpected =
+      voterInfoError === "Election unknown" ||
+      voterInfoError?.includes("Election unknown");
+
+    if (voterInfoIsExpected && divisionsError) {
+      // No election (expected) + divisions failed = show message, not mock data
+      return {
+        election: null,
+        races: [],
+        measures: [],
+        officials: [],
+        divisions: [],
+        address,
+        isMockData: false,
+        fallbackReason:
+          "No upcoming elections found for this address. District information is temporarily unavailable.",
+      };
+    }
+
     return {
       ...mockBallotData,
       address,
       isMockData: true,
-      fallbackReason: `Demo mode — both API calls failed. Voter info: ${voterInfoError || "unknown error"}. Representatives: ${representativesError || "unknown error"}.`,
+      fallbackReason: `Demo mode — API calls returned no data. Voter info: ${voterInfoError || "unknown error"}. Divisions: ${divisionsError || "unknown error"}.`,
     };
   }
 
@@ -129,40 +150,26 @@ export function mapApiResponse(
     }
   }
 
-  // Parse representatives
-  const officials: Official[] = [];
-  if (representatives) {
-    const rep = representatives as Record<string, unknown>;
-    const offices = (rep.offices as Record<string, unknown>[]) || [];
-    const officialsList =
-      (rep.officials as Record<string, unknown>[]) || [];
+  // Parse divisions from divisionsByAddress
+  const divisions: Division[] = [];
+  if (divisionsData) {
+    const divs = divisionsData as Record<string, unknown>;
+    const divisionsMap = (divs.divisions || {}) as Record<
+      string,
+      { name: string; officeIndices?: number[]; alsoKnownAs?: string[] }
+    >;
 
-    for (const office of offices) {
-      const officeName = (office.name as string) || "Unknown Office";
-      const levels = office.levels as string[] | undefined;
-      const indices = (office.officialIndices as number[]) || [];
-
-      for (const idx of indices) {
-        const o = officialsList[idx];
-        if (!o) continue;
-
-        officials.push({
-          name: (o.name as string) || "Unknown",
-          office: officeName,
-          level: categorizeOffice(levels),
-          party: (o.party as string) || "Unknown",
-          phones: (o.phones as string[]) || [],
-          urls: ((o.urls as { value: string }[]) || []).map(
-            (u) => (typeof u === "string" ? u : u.value) || ""
-          ),
-          emails: ((o.emails as { value: string }[]) || []).map(
-            (e) => (typeof e === "string" ? e : e.value) || ""
-          ),
-          photoUrl: (o.photoUrl as string) || undefined,
-          channels: (o.channels as { type: string; id: string }[]) || undefined,
-        });
-      }
+    for (const [ocdId, divData] of Object.entries(divisionsMap)) {
+      divisions.push({
+        ocdId,
+        name: divData.name || ocdId,
+        level: categorizeDivision(ocdId),
+      });
     }
+
+    // Sort: federal first, then state, then local
+    const levelOrder = { federal: 0, state: 1, local: 2 };
+    divisions.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
   }
 
   const hasActiveElection = !!election;
@@ -174,7 +181,8 @@ export function mapApiResponse(
     election: hasActiveElection ? election : null,
     races,
     measures,
-    officials,
+    officials: [],
+    divisions,
     address,
     isMockData: false,
     fallbackReason: noElectionMessage,

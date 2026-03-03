@@ -46,15 +46,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const [voterInfoResult, representativesResult] = await Promise.all([
+  const [voterInfoResult, divisionsResult] = await Promise.all([
     fetchCivicApi("voterinfo", address, apiKey),
-    fetchCivicApi("representatives", address, apiKey),
+    fetchCivicApi("divisionsByAddress", address, apiKey),
   ]);
 
   return NextResponse.json({
     voterInfo: voterInfoResult.data,
     voterInfoError: voterInfoResult.error,
-    representatives: representativesResult.data,
-    representativesError: representativesResult.error,
+    divisions: divisionsResult.data,
+    divisionsError: divisionsResult.error,
+    // Keep old field names as null for backwards compat with mapper
+    representatives: null,
+    representativesError: divisionsResult.error
+      ? `Representatives API was shut down by Google (April 2025). Divisions lookup: ${divisionsResult.error}`
+      : null,
   });
 }

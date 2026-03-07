@@ -22,7 +22,19 @@ export default function Header() {
             <span className="text-xl font-bold tracking-tight">Kator</span>
           </Link>
 
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4 sm:gap-6">
+            <Link
+              href="/quiz"
+              className="text-amber-400 hover:text-amber-300 transition-colors text-sm font-semibold"
+            >
+              Quiz
+            </Link>
+            <Link
+              href="/ballot"
+              className="text-navy-200 hover:text-white transition-colors text-sm font-medium"
+            >
+              Ballot
+            </Link>
             <Link
               href="/about"
               className="text-navy-200 hover:text-white transition-colors text-sm font-medium"

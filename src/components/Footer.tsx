@@ -25,24 +25,20 @@ export default function Footer() {
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm">
+            <Link href="/quiz" className="hover:text-white transition-colors">
+              Quiz
+            </Link>
+            <Link href="/ballot" className="hover:text-white transition-colors">
+              Ballot
+            </Link>
             <Link href="/about" className="hover:text-white transition-colors">
               About
             </Link>
-            <span className="text-navy-600">|</span>
-            <span className="text-navy-400">Nonpartisan civic information</span>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-navy-800 text-center text-xs text-navy-500">
-          Data provided by the{" "}
-          <a
-            href="https://developers.google.com/civic-information"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-civic-400 hover:text-civic-300"
-          >
-            Google Civic Information API
-          </a>
-          . Kator is not affiliated with any political party or candidate.
+        <div className="mt-4 pt-4 border-t border-navy-800 text-center text-xs text-navy-500 space-y-1">
+          <p>Kator is nonpartisan and does not endorse candidates.</p>
+          <p>Your data stays on your device. We don&apos;t track how you vote.</p>
         </div>
       </div>
     </footer>

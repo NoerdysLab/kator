@@ -1,7 +1,7 @@
 import { GlobeEvent } from '../types';
 
 const ENDPOINT =
-  'https://api.gdeltproject.org/api/v2/geo/geo?query=conflict%20OR%20disaster%20OR%20protest%20OR%20crisis&mode=pointdata&format=geojson&timespan=15min';
+  'https://api.gdeltproject.org/api/v2/geo/geo?query=crisis&mode=pointdata&format=GeoJSON&timespan=15';
 
 function classifyGdeltEvent(name: string): GlobeEvent['type'] {
   const lower = (name || '').toLowerCase();

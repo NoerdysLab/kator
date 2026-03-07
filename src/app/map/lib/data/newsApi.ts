@@ -9,7 +9,8 @@ export async function fetchNews(): Promise<GlobeEvent[]> {
   const articles = json.data || [];
 
   const events: GlobeEvent[] = [];
-  for (const article of articles) {
+  for (let i = 0; i < articles.length; i++) {
+    const article = articles[i];
     const geo = geocodeArticle(
       article.title || '',
       article.description || article.snippet || undefined,

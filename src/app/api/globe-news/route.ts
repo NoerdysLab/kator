@@ -11,18 +11,28 @@ export async function GET() {
   try {
     const apiKey = process.env.NEWS_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ data: [] }, { status: 500 });
+      console.error('[globe-news] NEWS_API_KEY env var is missing');
+      return NextResponse.json({ data: [] });
     }
 
     const res = await fetch(
       `https://api.thenewsapi.com/v1/news/top?api_token=${apiKey}&locale=us&limit=10&language=en`,
       { next: { revalidate: 1800 } }
     );
-    const data = await res.json();
-    cache = { data, timestamp: Date.now() };
-    return NextResponse.json(data);
-  } catch {
+
+    if (!res.ok) {
+      console.error(`[globe-news] TheNewsAPI returned ${res.status}: ${await res.text()}`);
+      if (cache) return NextResponse.json(cache.data);
+      return NextResponse.json({ data: [] });
+    }
+
+    const json = await res.json();
+    const articles = json.data || [];
+    cache = { data: { data: articles }, timestamp: Date.now() };
+    return NextResponse.json(cache.data);
+  } catch (error) {
+    console.error('[globe-news] Fetch failed:', error);
     if (cache) return NextResponse.json(cache.data);
-    return NextResponse.json({ data: [] }, { status: 500 });
+    return NextResponse.json({ data: [] });
   }
 }
